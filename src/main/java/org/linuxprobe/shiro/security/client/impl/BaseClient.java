@@ -19,6 +19,7 @@ import javax.servlet.ServletResponse;
 public abstract class BaseClient<P extends SubjectProfile, C extends Credentials> implements Client<P> {
     private CredentialsExtractor<C> credentialsExtractor;
     private ProfileCreator<P, C> profileCreator;
+    private String name;
 
     public BaseClient(CredentialsExtractor<C> credentialsExtractor, ProfileCreator<P, C> profileCreator) {
         this.credentialsExtractor = credentialsExtractor;
@@ -43,5 +44,16 @@ public abstract class BaseClient<P extends SubjectProfile, C extends Credentials
     public void init() {
         Assert.notNull(this.credentialsExtractor, "credentialsExtractor can not be null");
         Assert.notNull(this.profileCreator, "profileCreator can not be null");
+    }
+
+    @Override
+    public boolean isSupport(ServletRequest request) {
+        String clientName = request.getParameter("clientName");
+        return clientName != null && clientName.equals(this.getName());
+    }
+
+    @Override
+    public boolean lazyVerification() {
+        return true;
     }
 }

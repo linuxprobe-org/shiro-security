@@ -29,6 +29,16 @@ public interface Client<P extends SubjectProfile> {
     String getSessionIdKey(ServletRequest request);
 
     /**
+     * 惰性校验,如果开启,shiro subject已登陆情况下将不再进行校验
+     */
+    boolean lazyVerification();
+
+    /**
+     * 判断当前请求是否支持该client
+     */
+    boolean isSupport(ServletRequest request);
+
+    /**
      * 初始化
      */
     void init();

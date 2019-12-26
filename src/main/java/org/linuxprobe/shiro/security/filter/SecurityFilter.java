@@ -10,6 +10,8 @@ import org.apache.shiro.util.Assert;
 import org.apache.shiro.web.servlet.AdviceFilter;
 import org.linuxprobe.shiro.security.authc.SecurityToken;
 import org.linuxprobe.shiro.security.client.Client;
+import org.linuxprobe.shiro.security.client.finder.ClientFinder;
+import org.linuxprobe.shiro.security.client.finder.DefaultClientFinder;
 import org.linuxprobe.shiro.security.profile.SubjectProfile;
 import org.linuxprobe.shiro.security.session.SessionKeyStore;
 
@@ -24,8 +26,9 @@ import java.util.concurrent.TimeUnit;
 public class SecurityFilter extends AdviceFilter {
     public static final String name = "security";
     private List<Client<?>> clients;
-    private boolean lazy;
+    private String defaultClient;
     private SessionKeyStore sessionKeyStore;
+    private ClientFinder clientFinder = DefaultClientFinder.getInstance();
 
     public SecurityFilter(List<Client<?>> clients, SessionKeyStore sessionKeyStore) {
         this.clients = clients;
@@ -35,45 +38,43 @@ public class SecurityFilter extends AdviceFilter {
     @SuppressWarnings("unchecked")
     @Override
     protected boolean preHandle(ServletRequest request, ServletResponse response) throws Exception {
+        // 未认证
+        boolean unauthorized = true;
         Subject subject = SecurityUtils.getSubject();
-        // 如果交互对象已经认证, 并且开启了惰性验证,则执行其它拦截器链路
-        if (subject.isAuthenticated() && this.lazy) {
-            return true;
-        } else {
-            Assert.notNull(this.clients, "clients can not be null");
-            SubjectProfile subjectProfile = null;
-            Client currnetClient = null;
-            for (Client client : this.clients) {
-                client.init();
-                subjectProfile = client.getSubjectProfile(request);
-                currnetClient = client;
-                if (subjectProfile != null) {
-                    break;
-                }
+        Assert.notNull(this.clients, "clients can not be null");
+        Client currentClient = this.clientFinder.find(request, this.defaultClient, this.clients);
+        if (currentClient != null) {
+            // 如果shir subject已经登陆并且client开启了惰性认证, 则继续执行其它拦截器
+            if (subject.isAuthenticated() && currentClient.lazyVerification()) {
+                return true;
             }
+            SubjectProfile subjectProfile = currentClient.getSubjectProfile(request);
             if (subjectProfile != null) {
-                subjectProfile.setClientName(currnetClient.getName());
+                if (!currentClient.afterHandle(subjectProfile, request, response)) {
+                    return false;
+                }
+                subjectProfile.setClientName(currentClient.getName());
+                if (!subject.isAuthenticated()) {
+                    SecurityToken<?> token = new SecurityToken<>(subjectProfile);
+                    subject.login(token);
+                }
+                // 更新key与sessionId的映射
                 try {
                     Session session = subject.getSession();
                     if (this.sessionKeyStore != null) {
-                        this.sessionKeyStore.addMap(currnetClient.getSessionIdKey(request), session.getId().toString(), session.getTimeout(), TimeUnit.MILLISECONDS);
+                        this.sessionKeyStore.addMap(currentClient.getSessionIdKey(request), session.getId().toString(), session.getTimeout(), TimeUnit.MILLISECONDS);
                     }
                 } catch (Exception ignored) {
                 }
-                if (!currnetClient.afterHandle(subjectProfile, request, response)) {
-                    return false;
-                } else {
-                    SecurityToken<?> token = new SecurityToken<>(subjectProfile);
-                    // 如果交互对象没有登陆, 执行登陆
-                    if (!subject.isAuthenticated()) {
-                        subject.login(token);
-                    }
-                    return true;
-                }
-            } else {
-                this.onUnauthorized(request, response);
-                return false;
+                // 认证成功
+                unauthorized = false;
             }
+        }
+        if (unauthorized) {
+            this.onUnauthorized(request, response);
+            return false;
+        } else {
+            return true;
         }
     }
 

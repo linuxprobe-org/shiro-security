@@ -16,20 +16,16 @@ import javax.servlet.http.HttpServletRequest;
 @Setter
 @NoArgsConstructor
 public class HeaderClient<P extends SubjectProfile> extends BaseClient<P, Credentials> {
-    private String name;
     private String headerName;
+    private boolean lazyVerification;
 
     public HeaderClient(String name, String headerName, ProfileCreator<P, Credentials> profileCreator) {
-        this.name = name;
+        this.setName(name);
         this.headerName = headerName;
         this.setCredentialsExtractor(new HeaderCredentialsExtractor(this.headerName));
         this.setProfileCreator(profileCreator);
     }
 
-    @Override
-    public String getName() {
-        return this.name;
-    }
 
     @Override
     public String getSessionIdKey(ServletRequest request) {
@@ -38,9 +34,26 @@ public class HeaderClient<P extends SubjectProfile> extends BaseClient<P, Creden
     }
 
     @Override
+    public boolean lazyVerification() {
+        return this.lazyVerification;
+    }
+
+    @Override
+    public boolean isSupport(ServletRequest request) {
+        boolean clientNameInUrl = super.isSupport(request);
+        if (clientNameInUrl) {
+            return true;
+        } else {
+            HttpServletRequest httpServletRequest = (HttpServletRequest) request;
+            String headerValue = httpServletRequest.getHeader(this.headerName);
+            return headerValue != null && !headerValue.isEmpty();
+        }
+    }
+
+    @Override
     public void init() {
         super.init();
-        Assert.notNull(this.name, "name can not be null");
+        Assert.notNull(this.getName(), "name can not be null");
         Assert.notNull(this.headerName, "headerName can not be null");
     }
 }
