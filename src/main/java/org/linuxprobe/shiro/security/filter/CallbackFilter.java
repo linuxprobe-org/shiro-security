@@ -4,35 +4,32 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.apache.shiro.SecurityUtils;
-import org.apache.shiro.session.Session;
-import org.apache.shiro.subject.Subject;
 import org.apache.shiro.util.Assert;
 import org.apache.shiro.web.servlet.AdviceFilter;
 import org.linuxprobe.shiro.security.authc.SecurityToken;
 import org.linuxprobe.shiro.security.client.Client;
 import org.linuxprobe.shiro.security.client.finder.ClientFinder;
 import org.linuxprobe.shiro.security.client.finder.DefaultClientFinder;
+import org.linuxprobe.shiro.security.constant.SecurityConstant;
 import org.linuxprobe.shiro.security.profile.SubjectProfile;
-import org.linuxprobe.shiro.security.session.SessionKeyStore;
 
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 @Getter
 @Setter
 @NoArgsConstructor
-public class SecurityFilter extends AdviceFilter {
-    public static final String name = "security";
+public class CallbackFilter extends AdviceFilter {
+    public static final String name = "callback";
     private List<Client<?>> clients;
     private String defaultClient;
-    private SessionKeyStore sessionKeyStore;
     private ClientFinder clientFinder = DefaultClientFinder.getInstance();
 
-    public SecurityFilter(List<Client<?>> clients, SessionKeyStore sessionKeyStore) {
+    public CallbackFilter(List<Client<?>> clients) {
         this.clients = clients;
-        this.sessionKeyStore = sessionKeyStore;
     }
 
     @SuppressWarnings("unchecked")
@@ -40,43 +37,30 @@ public class SecurityFilter extends AdviceFilter {
     protected boolean preHandle(ServletRequest request, ServletResponse response) throws Exception {
         // 未认证
         boolean unauthorized = true;
-        Subject subject = SecurityUtils.getSubject();
         Assert.notNull(this.clients, "clients can not be null");
         Client currentClient = this.clientFinder.find(request, this.defaultClient, this.clients);
+        SubjectProfile subjectProfile = null;
         if (currentClient != null) {
             currentClient.init();
-            // 如果shir subject已经登陆并且client开启了惰性认证, 则继续执行其它拦截器
-            if (subject.isAuthenticated() && currentClient.lazyVerification()) {
-                return true;
-            }
-            SubjectProfile subjectProfile = currentClient.getSubjectProfile(request);
+            subjectProfile = currentClient.getSubjectProfile(request);
             if (subjectProfile != null) {
                 if (!currentClient.afterHandle(subjectProfile, request, response)) {
                     return false;
                 }
                 subjectProfile.setClientName(currentClient.getName());
-                if (!subject.isAuthenticated()) {
-                    SecurityToken<?> token = new SecurityToken<>(subjectProfile);
-                    subject.login(token);
-                }
-                // 更新key与sessionId的映射
-                try {
-                    Session session = subject.getSession();
-                    if (this.sessionKeyStore != null) {
-                        this.sessionKeyStore.addMap(currentClient.getSessionIdKey(request), session.getId().toString(), session.getTimeout(), TimeUnit.MILLISECONDS);
-                    }
-                } catch (Exception ignored) {
-                }
-                // 认证成功
+                SecurityUtils.getSubject().login(new SecurityToken<>(subjectProfile));
                 unauthorized = false;
             }
         }
+        // 如果未认证
         if (unauthorized) {
             this.onUnauthorized(request, response);
-            return false;
-        } else {
-            return true;
         }
+        //如果认证成功
+        else {
+            this.onAuthorized(request, response, subjectProfile);
+        }
+        return false;
     }
 
     /**
@@ -84,5 +68,17 @@ public class SecurityFilter extends AdviceFilter {
      */
     public void onUnauthorized(ServletRequest request, ServletResponse response) {
         throw new SecurityException("Unauthorized");
+    }
+
+    /**
+     * 当认证成功时
+     */
+    public void onAuthorized(ServletRequest request, ServletResponse response, SubjectProfile subjectProfile) throws IOException {
+        //重定向
+        String lastRequestURI = (String) SecurityUtils.getSubject().getSession().getAttribute(SecurityConstant.lastRequestURI);
+        if (lastRequestURI == null || lastRequestURI.isEmpty()) {
+            lastRequestURI = "/";
+        }
+        ((HttpServletResponse) response).sendRedirect(lastRequestURI);
     }
 }

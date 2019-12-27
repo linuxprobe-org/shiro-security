@@ -11,8 +11,7 @@ public class SubjectUtils {
     public static SubjectProfile getSessionCommonProfile() {
         Subject subject = SecurityUtils.getSubject();
         if (subject.isAuthenticated()) {
-            SubjectProfile pac4jPrincipal = (SubjectProfile) subject.getPrincipal();
-            return null;
+            return (SubjectProfile) subject.getPrincipal();
         }
         return null;
     }

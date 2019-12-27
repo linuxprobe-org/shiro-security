@@ -5,6 +5,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.apache.shiro.util.Assert;
 import org.linuxprobe.shiro.security.client.Client;
+import org.linuxprobe.shiro.security.constant.SecurityConstant;
 import org.linuxprobe.shiro.security.credentials.Credentials;
 import org.linuxprobe.shiro.security.credentials.extractor.CredentialsExtractor;
 import org.linuxprobe.shiro.security.profile.SubjectProfile;
@@ -19,6 +20,7 @@ import javax.servlet.ServletResponse;
 public abstract class BaseClient<P extends SubjectProfile, C extends Credentials> implements Client<P> {
     private CredentialsExtractor<C> credentialsExtractor;
     private ProfileCreator<P, C> profileCreator;
+    private boolean lazyVerification = false;
     private String name;
 
     public BaseClient(CredentialsExtractor<C> credentialsExtractor, ProfileCreator<P, C> profileCreator) {
@@ -29,9 +31,6 @@ public abstract class BaseClient<P extends SubjectProfile, C extends Credentials
     @Override
     public P getSubjectProfile(ServletRequest request) {
         C credentials = this.credentialsExtractor.extract(request);
-        if (credentials == null) {
-            return null;
-        }
         return this.profileCreator.create(credentials);
     }
 
@@ -48,12 +47,17 @@ public abstract class BaseClient<P extends SubjectProfile, C extends Credentials
 
     @Override
     public boolean isSupport(ServletRequest request) {
-        String clientName = request.getParameter("clientName");
+        String clientName = request.getParameter(SecurityConstant.clientName);
         return clientName != null && clientName.equals(this.getName());
     }
 
     @Override
+    public String getSessionIdKey(ServletRequest request) {
+        return null;
+    }
+
+    @Override
     public boolean lazyVerification() {
-        return true;
+        return this.lazyVerification;
     }
 }
