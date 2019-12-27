@@ -17,7 +17,6 @@ import javax.servlet.http.HttpServletRequest;
 @NoArgsConstructor
 public class HeaderClient<P extends SubjectProfile> extends BaseClient<P, Credentials> {
     private String headerName;
-    private boolean lazyVerification;
 
     public HeaderClient(String name, String headerName, ProfileCreator<P, Credentials> profileCreator) {
         this.setName(name);
@@ -31,11 +30,6 @@ public class HeaderClient<P extends SubjectProfile> extends BaseClient<P, Creden
     public String getSessionIdKey(ServletRequest request) {
         HttpServletRequest httpServletRequest = (HttpServletRequest) request;
         return httpServletRequest.getHeader(this.headerName);
-    }
-
-    @Override
-    public boolean lazyVerification() {
-        return this.lazyVerification;
     }
 
     @Override
