@@ -27,7 +27,7 @@ public class SecurityWebSessionManager extends DefaultWebSessionManager {
 
     private String getSessionIdKey(ServletRequest request) {
         Client<?> client = this.clientFinder.find(request, null, this.clients);
-        return client.getSessionIdKey(request);
+        return client == null ? null : client.getSessionIdKey(request);
     }
 
     @Override
