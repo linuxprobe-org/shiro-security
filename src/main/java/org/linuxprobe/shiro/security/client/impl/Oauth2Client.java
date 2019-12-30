@@ -1,6 +1,5 @@
 package org.linuxprobe.shiro.security.client.impl;
 
-import com.github.scribejava.core.builder.ServiceBuilder;
 import com.github.scribejava.core.builder.api.DefaultApi20;
 import com.github.scribejava.core.oauth.OAuth20Service;
 import lombok.Getter;
@@ -50,8 +49,6 @@ public class Oauth2Client extends BaseClient<Oauth2SubjectProfile, Credentials> 
      * 自定义标识
      */
     private String state;
-
-    private OAuth20Service oAuth20Service;
     /**
      * oauth2 client 用户配置创建对象
      */
@@ -109,15 +106,9 @@ public class Oauth2Client extends BaseClient<Oauth2SubjectProfile, Credentials> 
         Assert.notNull(this.clientSecret, "clientSecret can not be null");
         Assert.notNull(this.profileUrl, "profileUrl can not be null");
         Assert.notNull(this.profileExtracter, "profileExtracter can not be null");
-        if (this.oAuth20Service == null) {
-            this.oAuth20Service = new ServiceBuilder(this.clientKey)
-                    .apiSecret(this.clientSecret)
-                    .callback(this.callBack)
-                    .defaultScope(this.scope)
-                    .build(this.api);
-        }
         if (this.getProfileCreator() == null) {
-            this.setProfileCreator(new Oauth2ProfileCreator(this.oAuth20Service, this.profileUrl, this.profileExtracter));
+            OAuth20Service oAuth20Service = this.api.createService(this.clientKey, this.clientSecret, this.callBack, this.scope, this.responseType, null, null, null, null);
+            this.setProfileCreator(new Oauth2ProfileCreator(oAuth20Service, this.profileUrl, this.profileExtracter));
         }
         super.init();
     }

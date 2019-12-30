@@ -38,7 +38,7 @@
 
     <groupId>org.linuxprobe</groupId>
     <artifactId>shiro-security</artifactId>
-    <version>0.0.1.RS2</version>
+    <version>0.0.1.RS3</version>
     <packaging>jar</packaging>
     <name>shiro-security</name>
     <description>shiro-security</description>
