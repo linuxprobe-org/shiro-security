@@ -33,9 +33,11 @@ public class SecurityWebSessionManager extends DefaultWebSessionManager {
     @Override
     protected Serializable getSessionId(ServletRequest request, ServletResponse response) {
         Serializable sessionId = null;
-        String sessionIdKey = this.getSessionIdKey(request);
-        if (sessionIdKey != null) {
-            sessionId = this.sessionKeyStore.getSessionIdByKey(sessionIdKey);
+        if (this.isSessionValidationSchedulerEnabled()) {
+            String sessionIdKey = this.getSessionIdKey(request);
+            if (sessionIdKey != null) {
+                sessionId = this.sessionKeyStore.getSessionIdByKey(sessionIdKey);
+            }
         }
         if (sessionId == null) {
             sessionId = super.getSessionId(request, response);

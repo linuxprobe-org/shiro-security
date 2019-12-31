@@ -38,7 +38,7 @@
 
     <groupId>org.linuxprobe</groupId>
     <artifactId>shiro-security</artifactId>
-    <version>0.0.1.RS3</version>
+    <version>0.0.1.RS5</version>
     <packaging>jar</packaging>
     <name>shiro-security</name>
     <description>shiro-security</description>
@@ -82,7 +82,7 @@
         <dependency>
             <groupId>org.linuxprobe</groupId>
             <artifactId>luava-shiro-redis</artifactId>
-            <version>0.0.4.RELEASE</version>
+            <version>0.0.5.RELEASE</version>
         </dependency>
         <dependency>
             <groupId>org.apache.shiro</groupId>

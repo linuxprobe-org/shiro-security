@@ -3,11 +3,10 @@ package org.linuxprobe.shiro.security.filter;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.apache.shiro.SecurityUtils;
 import org.apache.shiro.session.Session;
 import org.apache.shiro.subject.Subject;
 import org.apache.shiro.util.Assert;
-import org.apache.shiro.web.servlet.AdviceFilter;
+import org.apache.shiro.web.filter.AccessControlFilter;
 import org.linuxprobe.shiro.security.authc.SecurityToken;
 import org.linuxprobe.shiro.security.client.Client;
 import org.linuxprobe.shiro.security.client.finder.ClientFinder;
@@ -23,12 +22,13 @@ import java.util.concurrent.TimeUnit;
 @Getter
 @Setter
 @NoArgsConstructor
-public class SecurityFilter extends AdviceFilter {
+public class SecurityFilter extends AccessControlFilter {
     public static final String name = "security";
     private List<Client<?>> clients;
     private String defaultClient;
     private SessionKeyStore sessionKeyStore;
     private ClientFinder clientFinder = DefaultClientFinder.getInstance();
+    private boolean enableSession = true;
 
     public SecurityFilter(List<Client<?>> clients, SessionKeyStore sessionKeyStore) {
         this.clients = clients;
@@ -37,10 +37,10 @@ public class SecurityFilter extends AdviceFilter {
 
     @SuppressWarnings("unchecked")
     @Override
-    protected boolean preHandle(ServletRequest request, ServletResponse response) throws Exception {
+    protected boolean isAccessAllowed(ServletRequest request, ServletResponse response, Object mappedValue) throws Exception {
         // 未认证
         boolean unauthorized = true;
-        Subject subject = SecurityUtils.getSubject();
+        Subject subject = this.getSubject(request, response);
         Assert.notNull(this.clients, "clients can not be null");
         Client currentClient = this.clientFinder.find(request, this.defaultClient, this.clients);
         if (currentClient != null) {
@@ -59,30 +59,25 @@ public class SecurityFilter extends AdviceFilter {
                     SecurityToken<?> token = new SecurityToken<>(subjectProfile);
                     subject.login(token);
                 }
-                // 更新key与sessionId的映射
-                try {
-                    Session session = subject.getSession();
-                    if (this.sessionKeyStore != null) {
-                        this.sessionKeyStore.addMap(currentClient.getSessionIdKey(request), session.getId().toString(), session.getTimeout(), TimeUnit.MILLISECONDS);
+                if (this.enableSession) {
+                    // 更新key与sessionId的映射
+                    try {
+                        Session session = subject.getSession();
+                        if (this.sessionKeyStore != null) {
+                            this.sessionKeyStore.addMap(currentClient.getSessionIdKey(request), session.getId().toString(), session.getTimeout(), TimeUnit.MILLISECONDS);
+                        }
+                    } catch (Exception ignored) {
                     }
-                } catch (Exception ignored) {
                 }
                 // 认证成功
                 unauthorized = false;
             }
         }
-        if (unauthorized) {
-            this.onUnauthorized(request, response);
-            return false;
-        } else {
-            return true;
-        }
+        return !unauthorized;
     }
 
-    /**
-     * 当认证失败时
-     */
-    public void onUnauthorized(ServletRequest request, ServletResponse response) {
+    @Override
+    protected boolean onAccessDenied(ServletRequest request, ServletResponse response) throws Exception {
         throw new SecurityException("Unauthorized");
     }
 }
