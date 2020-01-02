@@ -10,6 +10,7 @@ import org.linuxprobe.shiro.security.authc.SecurityToken;
 import org.linuxprobe.shiro.security.client.Client;
 import org.linuxprobe.shiro.security.client.finder.ClientFinder;
 import org.linuxprobe.shiro.security.client.finder.DefaultClientFinder;
+import org.linuxprobe.shiro.security.filter.advice.SigninAdvice;
 import org.linuxprobe.shiro.security.profile.SubjectProfile;
 
 import javax.servlet.ServletRequest;
@@ -27,6 +28,7 @@ public class CallbackFilter extends AdviceFilter {
     private String defaultClient;
     private String homePage = "/";
     private ClientFinder clientFinder = DefaultClientFinder.getInstance();
+    private SigninAdvice signinAdvice;
 
     public CallbackFilter(List<Client<?>> clients) {
         this.clients = clients;
@@ -48,7 +50,13 @@ public class CallbackFilter extends AdviceFilter {
                     return false;
                 }
                 subjectProfile.setClientName(currentClient.getName());
+                if (this.signinAdvice != null) {
+                    this.signinAdvice.signinBefore(subjectProfile);
+                }
                 SecurityUtils.getSubject().login(new SecurityToken<>(subjectProfile));
+                if (this.signinAdvice != null) {
+                    this.signinAdvice.signinAfter(subjectProfile);
+                }
                 unauthorized = false;
             }
         }
