@@ -10,7 +10,6 @@ import org.linuxprobe.shiro.security.authc.SecurityToken;
 import org.linuxprobe.shiro.security.client.Client;
 import org.linuxprobe.shiro.security.client.finder.ClientFinder;
 import org.linuxprobe.shiro.security.client.finder.DefaultClientFinder;
-import org.linuxprobe.shiro.security.constant.SecurityConstant;
 import org.linuxprobe.shiro.security.profile.SubjectProfile;
 
 import javax.servlet.ServletRequest;
@@ -26,6 +25,7 @@ public class CallbackFilter extends AdviceFilter {
     public static final String name = "callback";
     private List<Client<?>> clients;
     private String defaultClient;
+    private String homePage = "/";
     private ClientFinder clientFinder = DefaultClientFinder.getInstance();
 
     public CallbackFilter(List<Client<?>> clients) {
@@ -74,11 +74,6 @@ public class CallbackFilter extends AdviceFilter {
      * 当认证成功时
      */
     public void onAuthorized(ServletRequest request, ServletResponse response, SubjectProfile subjectProfile) throws IOException {
-        //重定向
-        String lastRequestURI = (String) SecurityUtils.getSubject().getSession().getAttribute(SecurityConstant.lastRequestURI);
-        if (lastRequestURI == null || lastRequestURI.isEmpty()) {
-            lastRequestURI = "/";
-        }
-        ((HttpServletResponse) response).sendRedirect(lastRequestURI);
+        ((HttpServletResponse) response).sendRedirect(this.homePage);
     }
 }

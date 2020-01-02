@@ -7,8 +7,8 @@ import org.linuxprobe.luava.shiro.redis.session.ShiroRedisSessionDAO;
 public class SecurityShiroRedisSessionDAO extends ShiroRedisSessionDAO {
     private SessionKeyStore sessionKeyStore;
 
-    public SecurityShiroRedisSessionDAO(RedisCache redisCache, SessionKeyStore sessionKeyStore, long timeout) {
-        super(redisCache, timeout);
+    public SecurityShiroRedisSessionDAO(RedisCache redisCache, SessionKeyStore sessionKeyStore, long timeout, boolean enableDoubleCache) {
+        super(redisCache, timeout, enableDoubleCache);
         this.sessionKeyStore = sessionKeyStore;
     }
 

@@ -4,9 +4,7 @@ import com.github.scribejava.core.builder.api.DefaultApi20;
 import com.github.scribejava.core.oauth.OAuth20Service;
 import lombok.Getter;
 import lombok.Setter;
-import org.apache.shiro.SecurityUtils;
 import org.apache.shiro.util.Assert;
-import org.linuxprobe.shiro.security.constant.SecurityConstant;
 import org.linuxprobe.shiro.security.credentials.Credentials;
 import org.linuxprobe.shiro.security.credentials.extractor.impl.ParameterCredentialsExtractor;
 import org.linuxprobe.shiro.security.profile.Oauth2SubjectProfile;
@@ -14,7 +12,6 @@ import org.linuxprobe.shiro.security.profile.creater.impl.Oauth2ProfileCreator;
 
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
@@ -75,19 +72,6 @@ public class Oauth2Client extends BaseClient<Oauth2SubjectProfile, Credentials> 
         if (profile.isNeedAuth()) {
             String loginUrl = this.api.getAuthorizationUrl(this.responseType, this.clientKey, this.callBack, this.scope, this.state, null);
             try {
-                String lastRequestURI = ((HttpServletRequest) request).getRequestURI();
-                String queryString = ((HttpServletRequest) request).getQueryString();
-                if (queryString == null || queryString.isEmpty()) {
-                    if (request.getParameter(SecurityConstant.clientName) == null) {
-                        queryString = SecurityConstant.clientName + "=" + this.getName();
-                    }
-                } else {
-                    if (request.getParameter(SecurityConstant.clientName) == null) {
-                        queryString += "&" + SecurityConstant.clientName + "=" + this.getName();
-                    }
-                }
-                lastRequestURI += "?" + queryString;
-                SecurityUtils.getSubject().getSession().setAttribute(SecurityConstant.lastRequestURI, lastRequestURI);
                 ((HttpServletResponse) response).sendRedirect(loginUrl);
             } catch (IOException e) {
                 throw new RuntimeException(e);
