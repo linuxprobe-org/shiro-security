@@ -20,9 +20,11 @@ public class CookieCredentialsExtractor implements CredentialsExtractor<Credenti
     public Credentials extract(ServletRequest request) {
         Cookie[] cookies = ((HttpServletRequest) request).getCookies();
         String paramValue = null;
-        for (Cookie cookie : cookies) {
-            if (cookie.getName().equals(this.cookieName)) {
-                paramValue = cookie.getValue();
+        if (cookies != null) {
+            for (Cookie cookie : cookies) {
+                if (cookie.getName().equals(this.cookieName)) {
+                    paramValue = cookie.getValue();
+                }
             }
         }
         if (paramValue != null && !paramValue.isEmpty()) {

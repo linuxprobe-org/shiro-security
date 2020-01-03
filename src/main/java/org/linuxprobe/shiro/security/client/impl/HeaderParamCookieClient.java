@@ -5,7 +5,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.apache.shiro.util.Assert;
 import org.linuxprobe.shiro.security.credentials.Credentials;
-import org.linuxprobe.shiro.security.credentials.extractor.impl.ParameterCredentialsExtractor;
+import org.linuxprobe.shiro.security.credentials.extractor.impl.HeaderParamCookieCredentialsExtractor;
 import org.linuxprobe.shiro.security.profile.SubjectProfile;
 import org.linuxprobe.shiro.security.profile.creater.ProfileCreator;
 
@@ -15,13 +15,17 @@ import javax.servlet.http.HttpServletRequest;
 @Getter
 @Setter
 @NoArgsConstructor
-public class ParameterClient<P extends SubjectProfile> extends BaseClient<P, Credentials> {
+public class HeaderParamCookieClient<P extends SubjectProfile> extends BaseClient<P, Credentials> {
+    private String headerName;
     private String paramName;
+    private String cookieName;
 
-    public ParameterClient(String name, String paramName, ProfileCreator<P, Credentials> profileCreator) {
+    public HeaderParamCookieClient(String name, String headerName, String paramName, String cookieName, ProfileCreator<P, Credentials> profileCreator) {
         this.setName(name);
+        this.headerName = headerName;
         this.paramName = paramName;
-        this.setCredentialsExtractor(new ParameterCredentialsExtractor(this.paramName));
+        this.cookieName = cookieName;
+        this.setCredentialsExtractor(new HeaderParamCookieCredentialsExtractor(this.headerName, this.paramName, this.cookieName));
         this.setProfileCreator(profileCreator);
     }
 
@@ -29,7 +33,7 @@ public class ParameterClient<P extends SubjectProfile> extends BaseClient<P, Cre
     @Override
     public String getSessionIdKey(ServletRequest request) {
         HttpServletRequest httpServletRequest = (HttpServletRequest) request;
-        return httpServletRequest.getHeader(this.paramName);
+        return httpServletRequest.getHeader(this.headerName);
     }
 
     @Override
@@ -46,6 +50,6 @@ public class ParameterClient<P extends SubjectProfile> extends BaseClient<P, Cre
     public void init() {
         super.init();
         Assert.notNull(this.getName(), "name can not be null");
-        Assert.notNull(this.paramName, "paramName can not be null");
+        Assert.isTrue(!(this.headerName == null && this.paramName == null && this.cookieName == null), "headerName, paramName, cookieName can't all be null");
     }
 }

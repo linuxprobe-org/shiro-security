@@ -6,17 +6,17 @@ import org.linuxprobe.shiro.security.credentials.extractor.CredentialsExtractor;
 
 import javax.servlet.ServletRequest;
 
-public class ParameterCredentialsExtractor implements CredentialsExtractor<Credentials> {
-    private String paramaName;
+public class ParamCredentialsExtractor implements CredentialsExtractor<Credentials> {
+    private String paramName;
 
-    public ParameterCredentialsExtractor(String paramaName) {
-        Assert.notNull(paramaName, "paramaName can not be null");
-        this.paramaName = paramaName;
+    public ParamCredentialsExtractor(String paramName) {
+        Assert.notNull(paramName, "paramName can not be null");
+        this.paramName = paramName;
     }
 
     @Override
     public Credentials extract(ServletRequest request) {
-        String paramValue = request.getParameter(this.paramaName);
+        String paramValue = request.getParameter(this.paramName);
         if (paramValue != null && !paramValue.isEmpty()) {
             Credentials credentials = new Credentials();
             credentials.setCredentialsValue(paramValue);

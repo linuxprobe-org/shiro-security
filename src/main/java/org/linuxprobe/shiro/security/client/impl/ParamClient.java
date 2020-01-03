@@ -5,7 +5,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.apache.shiro.util.Assert;
 import org.linuxprobe.shiro.security.credentials.Credentials;
-import org.linuxprobe.shiro.security.credentials.extractor.impl.CookieCredentialsExtractor;
+import org.linuxprobe.shiro.security.credentials.extractor.impl.ParamCredentialsExtractor;
 import org.linuxprobe.shiro.security.profile.SubjectProfile;
 import org.linuxprobe.shiro.security.profile.creater.ProfileCreator;
 
@@ -15,13 +15,13 @@ import javax.servlet.http.HttpServletRequest;
 @Getter
 @Setter
 @NoArgsConstructor
-public class CookieClient<P extends SubjectProfile> extends BaseClient<P, Credentials> {
-    private String cookieName;
+public class ParamClient<P extends SubjectProfile> extends BaseClient<P, Credentials> {
+    private String paramName;
 
-    public CookieClient(String name, String cookieName, ProfileCreator<P, Credentials> profileCreator) {
+    public ParamClient(String name, String paramName, ProfileCreator<P, Credentials> profileCreator) {
         this.setName(name);
-        this.cookieName = cookieName;
-        this.setCredentialsExtractor(new CookieCredentialsExtractor(this.cookieName));
+        this.paramName = paramName;
+        this.setCredentialsExtractor(new ParamCredentialsExtractor(this.paramName));
         this.setProfileCreator(profileCreator);
     }
 
@@ -29,7 +29,7 @@ public class CookieClient<P extends SubjectProfile> extends BaseClient<P, Creden
     @Override
     public String getSessionIdKey(ServletRequest request) {
         HttpServletRequest httpServletRequest = (HttpServletRequest) request;
-        return httpServletRequest.getHeader(this.cookieName);
+        return httpServletRequest.getHeader(this.paramName);
     }
 
     @Override
@@ -38,9 +38,7 @@ public class CookieClient<P extends SubjectProfile> extends BaseClient<P, Creden
         if (clientNameInUrl) {
             return true;
         } else {
-            HttpServletRequest httpServletRequest = (HttpServletRequest) request;
-            String headerValue = httpServletRequest.getHeader(this.cookieName);
-            return headerValue != null && !headerValue.isEmpty();
+            return this.getCredentialsExtractor().extract(request) != null;
         }
     }
 
@@ -48,6 +46,6 @@ public class CookieClient<P extends SubjectProfile> extends BaseClient<P, Creden
     public void init() {
         super.init();
         Assert.notNull(this.getName(), "name can not be null");
-        Assert.notNull(this.cookieName, "cookieName can not be null");
+        Assert.notNull(this.paramName, "paramName can not be null");
     }
 }

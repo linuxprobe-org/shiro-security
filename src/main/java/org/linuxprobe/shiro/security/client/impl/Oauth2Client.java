@@ -6,7 +6,7 @@ import lombok.Getter;
 import lombok.Setter;
 import org.apache.shiro.util.Assert;
 import org.linuxprobe.shiro.security.credentials.Credentials;
-import org.linuxprobe.shiro.security.credentials.extractor.impl.ParameterCredentialsExtractor;
+import org.linuxprobe.shiro.security.credentials.extractor.impl.ParamCredentialsExtractor;
 import org.linuxprobe.shiro.security.profile.Oauth2SubjectProfile;
 import org.linuxprobe.shiro.security.profile.creater.impl.Oauth2ProfileCreator;
 
@@ -60,7 +60,7 @@ public class Oauth2Client extends BaseClient<Oauth2SubjectProfile, Credentials> 
     private Oauth2ProfileCreator.Oauth2SubjectProfileExtracter profileExtracter;
 
     public Oauth2Client(DefaultApi20 api, Oauth2ProfileCreator oauth2ProfileCreator, Oauth2ProfileCreator.Oauth2SubjectProfileExtracter profileExtracter) {
-        this.setCredentialsExtractor(new ParameterCredentialsExtractor("code"));
+        this.setCredentialsExtractor(new ParamCredentialsExtractor("code"));
         this.api = api;
         this.oauth2ProfileCreator = oauth2ProfileCreator;
         this.profileExtracter = profileExtracter;
